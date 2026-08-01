@@ -8,7 +8,6 @@ export default async function handler(req, res) {
 
   const from = today.toISOString().slice(0, 10);
   const to = nextYear.toISOString().slice(0, 10);
-
   const pages = [1, 2, 3, 4, 5];
 
   async function fetchTMDB(url) {
@@ -20,13 +19,13 @@ export default async function handler(req, res) {
 
   const movieRequests = pages.map((page) =>
     fetchTMDB(
-      `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&language=en-US&sort_by=primary_release_date.asc&primary_release_date.gte=${from}&primary_release_date.lte=${to}&page=${page}`
+      `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&language=en-US&sort_by=popularity.desc&primary_release_date.gte=${from}&primary_release_date.lte=${to}&include_adult=false&page=${page}`
     )
   );
 
   const tvRequests = pages.map((page) =>
     fetchTMDB(
-      `https://api.themoviedb.org/3/discover/tv?api_key=${apiKey}&language=en-US&sort_by=first_air_date.asc&first_air_date.gte=${from}&first_air_date.lte=${to}&page=${page}`
+      `https://api.themoviedb.org/3/discover/tv?api_key=${apiKey}&language=en-US&sort_by=popularity.desc&first_air_date.gte=${from}&first_air_date.lte=${to}&include_adult=false&page=${page}`
     )
   );
 
@@ -40,9 +39,9 @@ export default async function handler(req, res) {
     }))
     .filter((item) => item.poster_path || item.backdrop_path)
     .sort((a, b) => {
-      const dateA = a.release_date || a.first_air_date || "9999-12-31";
-      const dateB = b.release_date || b.first_air_date || "9999-12-31";
-      return dateA.localeCompare(dateB);
+      const popularityA = a.popularity || 0;
+      const popularityB = b.popularity || 0;
+      return popularityB - popularityA;
     });
 
   const unique = [];
@@ -53,6 +52,7 @@ export default async function handler(req, res) {
     if (seen.has(key)) continue;
     seen.add(key);
     unique.push(item);
+    if (unique.length >= 30) break;
   }
 
   return res.status(200).json({
