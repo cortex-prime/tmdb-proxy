@@ -5,8 +5,10 @@ export default async function handler(req, res) {
   const type = req.query.type === "tv" ? "tv" : "movie";
   const id = req.query.id;
 
-  if (!id) {
-    return res.status(400).json({ error: "Missing id" });
+  if (!id || String(id).trim() === "") {
+    return res.status(400).json({
+      error: "Missing required query parameter: id"
+    });
   }
 
   const url = `https://api.themoviedb.org/3/${type}/${id}/images?api_key=${apiKey}`;
