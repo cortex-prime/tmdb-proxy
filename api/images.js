@@ -4,7 +4,10 @@ export default async function handler(req, res) {
 
   const type = req.query.type === "tv" ? "tv" : "movie";
   const id = req.query.id;
-  if (!id) return res.status(400).json({ error: "Missing id" });
+
+  if (!id) {
+    return res.status(400).json({ error: "Missing id" });
+  }
 
   const url = `https://api.themoviedb.org/3/${type}/${id}/images?api_key=${apiKey}`;
   const response = await fetch(url);
@@ -14,6 +17,7 @@ export default async function handler(req, res) {
   }
 
   const data = await response.json();
+
   res.setHeader("Cache-Control", "s-maxage=86400, stale-while-revalidate=604800");
   return res.status(200).json({ posters: data.posters ?? [] });
 }
