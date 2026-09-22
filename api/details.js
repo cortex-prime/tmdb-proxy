@@ -30,5 +30,33 @@ export default async function handler(req, res) {
     return res.status(200).json({ posters: data.posters ?? [] });
   }
 
-  return res.status(200).json(data);
+  // Trailer metadata is supplementary: a videos failure must never prevent an
+  // existing detail request from succeeding.
+  let trailer = null;
+  try {
+    const videosResponse = await fetch(
+      `https://api.themoviedb.org/3/${type}/${id}/videos?api_key=${apiKey}&language=en-US`
+    );
+    if (videosResponse.ok) {
+      const results = (await videosResponse.json()).results ?? [];
+      const trailers = results.filter((video) =>
+        video.site === "YouTube" &&
+        video.type === "Trailer" &&
+        typeof video.key === "string" &&
+        /^[A-Za-z0-9_-]{6,32}$/.test(video.key)
+      );
+      const selected = trailers.find((video) => video.official) ?? trailers[0];
+      if (selected) {
+        trailer = {
+          key: selected.key,
+          name: selected.name ?? "Trailer",
+          official: selected.official === true
+        };
+      }
+    }
+  } catch {
+    // Keep the detail payload backward compatible when TMDB video lookup fails.
+  }
+
+  return res.status(200).json({ ...data, trailer });
 }
